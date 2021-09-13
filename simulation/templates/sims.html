@@ -1,0 +1,1061 @@
+<!-- hello_world.html -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    {% block content %}
+    {% endblock content %}
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="//code.jquery.com/ui/1.12.0/jquery-ui.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
+    <link rel="stylesheet" href="http://jqueryui.com/resources/demos/style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.4.4/math.min.js"></script>
+
+    <script>
+        var playorpause = 0
+        var httpRequest= []
+        var canceled=0
+        var waitTime=[]
+        var timeoutID
+        var timeoutID2
+        var timeoutID4
+        var firstTime = 1
+        var tuples={"arrivalRate":5.0,"arrivalCV":1.0,"serviceRate":5.0,"serviceTimeCV":1.0,"speed":1.0,"predicted":0}
+        var clientInterval=[]
+
+        var t=0
+        var i=0
+        var queueNum=0
+        delaytime=(10000-900*tuples["serviceRate"])/(tuples["speed"]**2)
+        arriveDurationtime=2000/(tuples["speed"]**2)
+        exitDurationtime=2000/(tuples["speed"]**2)
+        animeList=[]
+        clientStop=0
+        customStop=0
+        stopBool=0
+        var nowCustom=0
+        var exitAnime
+        var arriveAnime
+        var moveonAnime=[]
+        var ff1=1
+        var serviceList=[]
+        var arrivalList=[]
+        var diff=0
+        var arraylength = [0,0,0]
+        var arraytmp=[0,0,0]
+        var errorcontrol=0
+        var formerServiceRate
+        var formerArrivalRate
+        var ctx
+        var myChart
+        var chartLabel=1
+        var waitTimeArr=[]
+        var errorcontrol2
+        var arrivalTime=[]
+
+        var timer=0
+        var arrivalFormula=d3.randomNormal(1/tuples["arrivalRate"],tuples["arrivalCV"]*(1/tuples["arrivalRate"]))
+        var serviceFormula=d3.randomNormal(1/tuples["serviceRate"],tuples["serviceTimeCV"]*(1/tuples["serviceRate"]))
+        var arrivalTmp
+        var ifArriving=0
+        var nowArriving
+        var ifExiting=0
+        var arriveProgress=0
+        var exitProgress=0
+        var ifExiting2=0
+        var delaytimetmp
+        var playtopause=0
+        var imgtmp=[]
+        var queuelength=0
+        var testarr1=[]
+        var testarr2=[]
+        var serviceTime=[]
+        var duration=[]
+        var queue=[]
+        var delaytime=[]
+        var arriveAnimation=[]
+        var exitAnimation=[]
+        var nowinQueue=0
+        var animequeue=0
+
+
+        function createPassenger(i){
+            eval("img"+i+"=document.createElement('img')")
+            eval("img"+i+".src = 'https://media2.giphy.com/media/W4EjLJMPXzjvFrZR9a/giphy.gif?cid=790b7611c9fbbf758eab4430e01b85681d4fbf2ced39c08d&rid=giphy.gif&ct=s'")
+            eval("img"+i).width=100
+            eval("img"+i).style='margin-left:-100px'
+            eval("img"+i).id="img"+i
+            document.getElementById('running').appendChild(eval("img"+i))
+        }
+
+
+
+
+
+        function arrivalAnimate(i,t){
+            createPassenger(i)
+            target="#img"+i.toString()
+            if(t<2000){
+                duration[i]=t/(tuples["speed"]**2)
+            }else{
+                duration[i]=2000/(tuples["speed"]**2)
+            }
+            imgtmp.push(target)
+            animequeuetmp=animequeue
+            animequeue+=1
+            arriveAnimation[i]=anime({
+                targets:imgtmp[i],
+                translateX: $(window).width()*0.715-100*animequeuetmp,
+                duration:duration[i],
+                easing:'linear',
+                complete:function(){
+                    if(animequeuetmp==animequeue){
+                        regulateAnimate(i,animequeue-1)
+                    }
+                }
+            })
+        }
+
+        function regulateAnimate(i,q){
+            anime({
+                targets:imgtmp[i],
+                translateX: $(window).width()*0.715-100*q,
+                duration:0,
+                easing:'linear',
+                complete:function(){
+                    if(q!=animequeue-1){
+                        regulateAnimate(i,animequeue-1)
+                    }
+                }
+            })
+        }
+
+        function moveonAnimate(i,j){
+            console.log("moveon!")
+            anime({
+                targets:imgtmp[i],
+                translateX:$(window).width()*0.715-100*(j-1),
+                duration:0,
+                easing:'linear',
+                complete:function(){
+                }
+            })
+        }
+
+        function exitAnimate(i){
+            anime({
+                targets:imgtmp[i],
+                translateX:$(window).width(),
+                duration:2000/(tuples["speed"]**2),
+                delay:delaytime[i]/(tuples["speed"]**2),
+                changeBegin:function(){
+
+
+                    nowinQueue-=1
+                }
+            })
+
+        }
+
+
+
+        function exitCustoms(i,p,source){
+            stopBool=0
+            if(tuples["serviceRate"]!=0){
+                delay=serviceFormula()
+                testarr2.push(delay)
+                if(delay<0){
+                    delay=0
+                }
+                delaytimetmp=60000*delay
+                delaytime.push(delaytimetmp)
+                exitAnimate(i)
+                if(i==0){
+                    serviceTime.push(arrivalTime[0]+delaytimetmp)
+                }else{
+                    if(source==1){
+                        if(serviceTime[i-1]<arrivalTime[i]){
+                            serviceTime.push(arrivalTime[i]+delaytimetmp)
+                        }else{
+                            serviceTime.push(serviceTime[serviceTime.length-1]+delaytimetmp)
+                        }
+                    }else{
+                        serviceTime.push(arrivalTime[i]+delaytimetmp)
+                    }
+                }
+
+
+                percentage=delaytimetmp/(delaytimetmp+2000)
+                        if(i==0){
+                            indWaitTime=0
+                        }else{
+                            if(source==1){
+                                if(arrivalTime[i]>serviceTime[i-1]){
+                                    indWaitTime=0
+                                }else{
+                                    indWaitTime=(serviceTime[i-1]-arrivalTime[i])/60000
+                                }
+
+                            }else{
+                                indWaitTime=0
+                            }
+                        }
+                        myChart.data.labels.push(chartLabel.toString())
+                        chartLabel++
+                        waitTimeArr.push(indWaitTime)
+                        let sum=waitTimeArr.reduce((previous, current) => current += previous);
+                        let avgWaitTime=sum/waitTimeArr.length;
+                        myChart.data.datasets[0].data.push(indWaitTime);
+                        myChart.data.datasets[1].data.push(avgWaitTime);
+                        myChart.update()
+                        window.setTimeout(function(){
+                        var temp
+                        if(queueNum<18){
+                            temp=queueNum
+                        }
+                        else{
+                            temp=17
+                        }
+                        for(j=1;j<animequeue;j++){
+                            moveonAnimate(i+j,j)
+                        }
+                        for(j=1;j<temp;j++){
+                            moveonCustoms(i+j,j)
+                        }
+                        queueNum-=1
+                        animequeue-=1
+                        queuelength=queueNum-1},delaytimetmp/(tuples["speed"]**2))
+            }
+        }
+
+        function moveonCustoms(i,j){
+                    if(j==1){
+                        exitCustoms(i,0,1)
+                        nowCustom=i
+                    }
+        }
+
+        function arriveCustoms2(i,q,p){
+            ifArriving=1
+            nowArriving=i
+
+            queuelength=queueNum-1
+            ifArriving=0
+            if(q==0){
+                  exitCustoms(i,0,0)
+                  nowCustom=i
+            }
+        }
+
+
+        function f1(){
+            if(ff1==1){
+                tmpa=arrivalFormula()
+                testarr1.push(tmpa)
+                if(tmpa<0){
+                    tmpa=0
+                }
+                arrivalTmp=60000*tmpa
+                t=arrivalTmp/(tuples["speed"]**2)
+                if(arrivalTmp<2000){
+                        timeoutTime=0
+                    }else{
+                        timeoutTime=t-2000
+                    }
+                    queue.push(queueNum)
+                    window.setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
+                ff1=0
+            }else{
+                if(tuples["arrivalRate"]!=0){
+                    tmpa=arrivalFormula()
+                    testarr1.push(tmpa)
+                    if(tmpa<0){
+                        tmpa=0
+                    }
+                    if(arrivalTime.length==0){
+                        arrivalTime.push(arrivalTmp)
+                    }else{
+                        arrivalTime.push(arrivalTime[arrivalTime.length-1]+arrivalTmp)
+                    }
+                    arriveCustoms2(i,queueNum,0)
+                    queueNum+=1
+                    arrivalTmp=60000*tmpa
+                    t=arrivalTmp/(tuples["speed"]**2)
+                    if(arrivalTmp<2000){
+                        timeoutTime=0
+                    }else{
+                        timeoutTime=t-2000
+                    }
+                    queue.push(queueNum)
+                    arrivalTimeout=setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
+                    i+=1
+                }else{
+                    t=100
+                }
+            }
+
+            timeoutID2=setTimeout(f1,t)
+        }
+
+
+
+
+        function delTuple(){
+            $.ajax({
+                type: "POST",
+                url: '{% url 'deleteTuple' %}',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', mode:$("#mode").val()},
+                success: function (response) {
+                    console.log("deleted")
+                    alert("tuple is deleted")
+                    location.reload();
+                }
+            });
+        }
+
+        function save(){
+            $.ajax({
+                type: "POST",
+                url: '{% url 'save' %}',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', mode:$("#mode").val(),arrivalRate:tuples["arrivalRate"] , serviceRate:tuples["serviceRate"],
+                 arrivalCV:tuples["arrivalCV"],serviceTimeCV:tuples["serviceTimeCV"],speed:tuples["speed"]},
+                success: function (response) {
+                    alert("tuple is saved")
+                }
+            });
+        }
+
+        function saveAs(){
+            $("#dialog").dialog("open");
+        }
+
+        function passParameter(change){
+            $.ajax({
+                type: "POST",
+                url: '{% url 'passParameter' %}',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', arrivalRate:tuples["arrivalRate"] , serviceRate:tuples["serviceRate"],
+                 arrivalCV:tuples["arrivalCV"],serviceTimeCV:tuples["serviceTimeCV"],speed:tuples["speed"]},
+                success: function (response) {
+                    b = JSON.parse(response)
+                }
+            });
+
+
+
+            arrivalFormula=d3.randomNormal(1/tuples["arrivalRate"],tuples["arrivalCV"]*(1/tuples["arrivalRate"]))
+            serviceFormula=d3.randomNormal(1/tuples["serviceRate"],tuples["serviceTimeCV"]*(1/tuples["serviceRate"]))
+
+            arriveDurationtime=2000/(tuples["speed"]**2)
+            exitDurationtime=2000/(tuples["speed"]**2)
+
+            if(change=="speed"){
+                if(playorpause==1){
+                    window.clearTimeout(timeoutID2)
+                    ff1=1
+                    f1()
+                    /*if(ifArriving==1){
+                        arriveAnime.pause()
+                        arriveCustoms2(nowArriving,queueNum,arriveProgress/100)
+                    }*/
+                    if(ifExiting2==1){
+                        if(exitProgress<100){
+                            exitAnime.pause()
+                            window.clearTimeout(timeoutID)
+                            exitCustoms(nowCustom,exitProgress/100,0)
+                        }
+                    }
+                }
+            }
+
+            if(change=="arrivalRate"){
+                if(playorpause==1){
+                    window.clearTimeout(timeoutID2)
+                    ff1=1
+                    f1()
+                }
+            }
+
+            if(change=="serviceRate"){
+                if(playorpause==1){
+                    if(exitProgress<100){
+                        exitAnime.pause()
+                        window.clearTimeout(timeoutID)
+                        exitCustoms(nowCustom,0.1,0)
+                    }
+                }
+            }
+
+            if(tuples["arrivalRate"]==0){
+                window.clearTimeout(timeoutID2)
+            }
+            if(formerServiceRate==0 && tuples["serviceRate"]!=0){
+                exitCustoms(nowCustom,0,0)
+            }
+            if(formerArrivalRate==0 && tuples["arrivalRate"]!=0){
+                f1()
+            }
+
+        }
+
+        function checkArraySize(){
+            $.ajax({
+                type: "POST",
+                url: '{% url 'checkArraySize' %}',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}'},
+                async: false,
+                success: function (response) {
+                    b = JSON.parse(response)
+                    console.log(b)
+                    arraylength[0]=b[0]
+                    arraylength[1]=b[1]
+                    arraylength[2]=b[2]
+                }
+            });
+        }
+
+        function updateTupleArray(){
+            tuples["arrivalRate"]=$("#arrivalRate").val()
+            tuples["arrivalCV"]=$("#arrivalCV").val()
+            tuples["serviceRate"]=$("#serviceRate").val()
+            tuples["serviceTimeCV"]=$("#serviceTimeCV").val()
+            tuples["speed"]=$("#speed").val()
+        }
+
+        function loadTuple(a){
+            {%for tuple in record %}
+                if("{{tuple.title}}"==a.value){
+                    $("#arrivalRate").val({{tuple.arrivalRate}})
+                    $(".arrivalRate").html({{tuple.arrivalRate}})
+                    $("#arrivalCV").val({{tuple.arrivalCV}})
+                    $(".arrivalCV").html({{tuple.arrivalCV}})
+                    $("#serviceRate").val({{tuple.serviceRate}})
+                    $(".serviceRate").html({{tuple.serviceRate}})
+                    $("#serviceTimeCV").val({{tuple.serviceTimeCV}})
+                    $(".serviceTimeCV").html({{tuple.serviceTimeCV}})
+                    $("#speed").val({{tuple.speed}})
+                    tuples["arrivalRate"]={{tuple.arrivalRate}}
+                    tuples["arrivalCV"]={{tuple.arrivalCV}}
+                    tuples["serviceRate"]={{tuple.serviceRate}}
+                    tuples["serviceTimeCV"]={{tuple.serviceTimeCV}}
+                    tuples["speed"]={{tuple.speed}}
+                    passParameter()
+                }
+            {%endfor%}
+        }
+
+
+        function adjustArray(){
+            $.ajax({
+                type: "POST",
+                url: '{% url 'adjustArray' %}',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}',i:arraytmp[2]},
+                success: function (response) {
+
+                }
+            });
+        }
+
+        function getClientInterval(){
+            tmp=[]
+            $.ajax({
+                type: "POST",
+                url: '{% url 'getClientInterval' %}',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}' ,i:arraytmp[0]},
+                success: function (response) {
+                    tmp=JSON.parse(response)
+                    arrivalList = arrivalList.concat(tmp)
+                    arraytmp[0]+=tmp.length
+                }
+            });
+            return tmp
+        }
+
+
+        function getServiceTime(){
+            $.ajax({
+                type: "POST",
+                url: '{% url 'getServiceTime' %}',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}',i:arraytmp[1]},
+                success: function (response) {
+                    tmp=JSON.parse(response)
+                    serviceList = serviceList.concat(tmp)
+                    arraytmp[1]+=tmp.length
+                }
+            });
+        }
+
+        function retriveData2() {
+            $.ajax({
+                type: "POST",
+                url: '{% url 'retriveData' %}',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}' ,i:arraytmp[2]},
+                success: function (response) {
+                    tmp=JSON.parse(response)
+                    waitTime = waitTime.concat(tmp)
+                    arraytmp[2]+=tmp.length
+                }
+            });
+        }
+
+
+        function runSim() {
+            a = ""
+            $.ajax({
+                type: "POST",
+                url: '{% url 'runsim' %}',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}' },
+                //async:false,
+                success: function (response) {
+                    a = JSON.parse(response)
+                    console.log(a)
+                }
+            });
+            return new Promise((resolve, reject) => {
+                if (a == "ok") {
+                    resolve('ok')
+                } else {
+                    reject('fail')
+                }
+            })
+        }
+
+         function reset(){
+            $.ajax({ //把list清空
+                        type: "POST",
+                        url: '{% url 'reset' %}',
+                        data: { csrfmiddlewaretoken: '{{ csrf_token }}' },
+                        success: function (response) {
+                            b = JSON.parse(response)
+                            console.log(b)
+                        }
+            });
+        }
+
+        function pauseSim() {
+            a = ""
+            $.ajax({
+                type: "POST",
+                url: '{% url 'pausesim' %}',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}' , status:playorpause},
+                success: function (response) {
+                    a = JSON.parse(response)
+                    console.log(a)
+                }
+            });
+            return new Promise((resolve, reject) => {
+                if (a == "ok") {
+                    resolve('ok')
+                } else {
+                    reject('fail')
+                }
+            })
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function updateTextInput(obj) {
+            $("." + obj.id).html(obj.value);
+            tuples[obj.id]=parseFloat(obj.value)
+            console.log(obj.id)
+            console.log(tuples)
+            passParameter(obj.id)
+
+        }
+
+        function updateResult(){
+            let res =retriveData2()
+            data=res
+            console.log("hello")
+        }
+
+
+        $(document).ready(function () {
+            ctx = document.getElementById('myChart');
+            myChart = new Chart(ctx, {
+            type: 'line', //圖表類型
+            data: {
+            //標題
+            labels: [],
+            datasets: [{
+                label:'individual wait time',
+                data:[],
+                borderWidth:1,
+                borderColor:'rgba(255, 99, 132, 1)',
+                backgroundColor:'rgba(255, 99, 132, 1)',
+                fill:false,
+                tension:0,
+                pointRadius:0,
+            },{
+                label:'average wait time',
+                data:[],
+                borderWidth:1,
+                borderColor:'rgba(54, 162, 235, 0.2)',
+                backgroundColor:'rgba(54, 162, 235, 0.2)',
+                fill:false,
+                tension:0,
+                pointRadius:0,
+            }],
+
+          },
+          options: {
+            responsive:true,
+            maintainAspectRatio: false,
+            stacked: false,
+            scales: {
+                y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                },
+            }
+          }
+        });
+            $( "#dialog" ).dialog({
+                autoOpen:false,
+                buttons:{
+                    OK: function() {
+                        $(this).dialog("close");
+                        $.ajax({
+                            type: "POST",
+                            url: '{% url 'saveAs' %}',
+                            data: { csrfmiddlewaretoken: '{{ csrf_token }}', arrivalRate:tuples["arrivalRate"] , serviceRate:tuples["serviceRate"],
+                            arrivalCV:tuples["arrivalCV"],serviceTimeCV:tuples["serviceTimeCV"],speed:tuples["speed"],saveAsName:$("#saveasname").val()},
+                            success: function (response) {
+                                b = JSON.parse(response)
+                                console.log(b)
+                                alert("tuple is saved")
+                                location.reload();
+                            }
+                        });
+                    }
+                }
+            });
+
+            $(".play").click(function () {
+                if (playorpause == 0) {
+                    canceled=0
+                    $(".play").html("Pause")
+                    if(firstTime==1){
+                        firstTime=0
+                    }else{
+                    }
+                    playorpause = 1
+                    animeList.forEach(a => a.play());
+                    animeList.length=0
+                    f1()
+                    timeoutID4= window.setInterval(function(){
+                        timer+=10*(tuples["speed"]**2)
+                    },10);
+
+
+                } else {
+                    playorpause = 0
+                    $(".play").html("Play")
+                    window.clearTimeout(timeoutID2);
+                    window.clearInterval(timeoutID4);
+                    ff1=1
+                    anime.running.forEach(a =>a.pause())
+                    anime.running.forEach(a => animeList.push(a))
+                    playtopause=1
+
+
+
+
+                }
+            });
+
+            $(".reset").click(async function () {
+                playtopause=0
+                window.clearTimeout(timeoutID)
+                window.clearTimeout(timeoutID2)
+                window.clearInterval(timeoutID4)
+                anime.running.length=0
+                $("#running").html("")
+
+                myChart.reset()
+                timer=0
+                serviceTime.length=0
+                arrivalTime.length=0
+                waitTimeArr.length=0
+                imgtmp.length=0
+                chartLabel=1
+                ff1=1
+                queueNum=0;
+                ifExiting=0;
+                ifExiting2=0
+                ifArriving=0
+                i=0;
+                myChart.data.labels.length=0
+                myChart.data.datasets[0].data.length=0
+                myChart.data.datasets[1].data.length=0
+                myChart.update()
+                if (playorpause == 0) { //如果沒在跑
+                } else { //如果跑到一半，要讓他開始重跑
+                    timeoutID4= window.setInterval(function(){
+                        timer+=10*tuples["speed"]**2
+                    },10);
+                    f1();
+                }
+            });
+        });
+
+        window.addEventListener("beforeunload", function(e){
+            $.ajax({
+                type: "POST",
+                url: '{% url 'terminate' %}',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}'},
+                success: function (response) {
+                    b = JSON.parse(response)
+                    console.log(b)
+                }
+           });
+        }, false);
+
+    /*
+        function exitCustoms(i,p,source){
+            stopBool=0
+            tmp2="#img"+i
+            bool=0
+            //console.log(tmp2+" exiting")
+            timetmp=timer
+            if(tuples["serviceRate"]!=0){
+                delay=serviceFormula()
+                testarr2.push(delay)
+                if(delay<0){
+                    delay=0
+                }
+                //console.log(tmp2+" delay:"+delay)
+                delaytimetmp=60000*delay
+                if(i==0){
+                    serviceTime.push(arrivalTime[0]+delaytimetmp)
+                }else{
+                    if(source==1){
+                        if(serviceTime[i-1]<arrivalTime[i]){
+                            serviceTime.push(arrivalTime[i]+delaytimetmp)
+                        }else{
+                            serviceTime.push(serviceTime[serviceTime.length-1]+delaytimetmp)
+                        }
+                    }else{
+                        serviceTime.push(arrivalTime[i]+delaytimetmp)
+                    }
+                }
+
+
+
+                percentage=delaytimetmp/(delaytimetmp+2000)
+
+                exitAnime=anime({
+                    targets: imgtmp[i],
+                    keyframes:[
+                        {translateX:$(window).width()}
+                    ],
+                    easing: 'linear',
+                    duration:exitDurationtime,
+                    delay:delaytimetmp/(tuples["speed"]**2)*(1-p),
+                    update:function(anim) {
+                        exitProgress=Math.round(anim.progress)/percentage
+                    },
+                    begin:function(){
+                        ifExiting2=1
+                        //console.log(tmp2+" begin")
+                    },
+                    changeBegin:function(){
+                        //console.log(tmp2+" change begin")
+                        $(imgtmp[i]).attr("src","https://media2.giphy.com/media/W4EjLJMPXzjvFrZR9a/giphy.gif?cid=790b7611c9fbbf758eab4430e01b85681d4fbf2ced39c08d&rid=giphy.gif&ct=s");
+                        if(ifArriving==1){
+                                ifExiting=1
+                        }
+                        //indWaitTime=(timetmp-arrivalTime[i])/60000
+                        if(i==0){
+                            indWaitTime=0
+                        }else{
+                            if(source==1){
+                                if(arrivalTime[i]>serviceTime[i-1]){
+                                    indWaitTime=0
+                                }else{
+                                    indWaitTime=(serviceTime[i-1]-arrivalTime[i])/60000
+                                }
+
+                            }else{
+                                indWaitTime=0
+                            }
+                        }
+                        myChart.data.labels.push(chartLabel.toString())
+                        chartLabel++
+                        waitTimeArr.push(indWaitTime)
+                        let sum=waitTimeArr.reduce((previous, current) => current += previous);
+                        let avgWaitTime=sum/waitTimeArr.length;
+                        myChart.data.datasets[0].data.push(indWaitTime);
+                        myChart.data.datasets[1].data.push(avgWaitTime);
+                        myChart.update()
+                        var temp
+                        if(queueNum<18){
+                            temp=queueNum
+                        }
+                        else{
+                            temp=17
+                        }
+                        for(j=1;j<temp;j++){
+                            moveonCustoms(i+j,j)
+                        }
+                        queueNum-=1
+                        queuelength=queueNum-1
+
+                    },
+                    complete:function(){
+                        //console.log(tmp2+" complete")
+                        ifExiting2=0
+                    }
+                })
+            }
+        }
+
+        function moveonCustoms(i,j){
+            tmp3="#img"+i
+            moveonAnime[j-1]=anime({
+                targets: imgtmp[i],
+                translateX:$(window).width()*0.715-100*(j-1),
+                duration:exitDurationtime,
+                easing: 'linear',
+                begin:function(){
+
+                },
+                complete:function(){
+                    if(j==1){
+                        exitCustoms(i,0,1)
+                        nowCustom=i
+                    }
+                }
+            })
+
+        }
+
+        function arriveCustoms2(i,q,p){
+            ifArriving=1
+            tmp="#img"+i.toString()
+            imgtmp.push(tmp)
+
+            var image = document.getElementsByClassName("img"+i.toString());
+            arriveAnime=anime({
+                targets: imgtmp[i],
+                keyframes:[
+                    {translateX:$(window).width()*0.715-100*q},
+                ],
+                duration:arriveDurationtime*(1-p),
+                easing: 'linear',
+                begin:function(){
+                    nowArriving=i
+
+                },
+                update:function(anim) {
+                    arriveProgress=Math.round(anim.progress)
+                },
+                complete:function(){
+
+                    $(imgtmp[i]).attr("src","https://i.imgur.com/pIPa6ew.png");
+                    queueNum+=1
+                    queuelength=queueNum-1
+                    ifArriving=0
+                    if(q!==queuelength){
+                        anime({
+                            targets: imgtmp[i],
+                            keyframes:[
+                                {translateX:$(window).width()*0.715-100*queuelength},
+                            ],
+                            duration:exitDurationtime,
+                            easing: 'linear',
+                            complete:function(){
+
+                                if(queuelength==0){
+                                    exitCustoms(i,0,0)
+                                    nowCustom=i
+                                }
+                            }
+                        })
+                    }else{
+
+                        if(q==0){
+                            exitCustoms(i,0,0)
+                            nowCustom=i
+                        }
+                    }
+
+
+                }
+            })
+        }
+
+        function f1(){
+            if(ff1==1){
+                tmpa=arrivalFormula()
+                testarr1.push(tmpa)
+                if(tmpa<0){
+                    tmpa=0
+                }
+                arrivalTmp=60000*tmpa
+                t=arrivalTmp/(tuples["speed"]**2)
+                ff1=0
+            }else{
+                if(tuples["arrivalRate"]!=0){
+                    //console.log(arrivalTmp)
+                    createPassenger(i)
+                    arriveCustoms2(i,queueNum,0)
+                    //arrivalTime.push(timer)
+                    i+=1
+                    tmpa=arrivalFormula()
+                    testarr1.push(tmpa)
+                    if(tmpa<0){
+                        tmpa=0
+                    }
+                    if(arrivalTime.length==0){
+                        arrivalTime.push(arrivalTmp)
+                    }else{
+                        arrivalTime.push(arrivalTime[arrivalTime.length-1]+arrivalTmp)
+                    }
+                    arrivalTmp=60000*tmpa
+                    t=arrivalTmp/(tuples["speed"]**2)
+                }else{
+                    t=100
+                }
+            }
+            timeoutID2=setTimeout(f1,t)
+        }*/
+
+    </script>
+    {% block javascript %}
+    {% endblock javascript %}
+    <title>Simulation webpage</title>
+    <style>
+        h1 {
+            text-align: center;
+        }
+
+        body {
+            background-color: lightyellow;
+        }
+
+        .result {
+            width: 46%;
+            height: 505px;
+            float: left;
+            margin: 2%;
+        }
+
+        .control {
+            width: 46%;
+            float: left;
+            height: 505px;
+            background-color: white;
+            margin: 2%;
+            text-align: center;
+
+        }
+
+        .parameter div {
+            float: left;
+            width: 50%;
+            height: 40px;
+            margin: auto;
+            text-align: center;
+        }
+
+        .parameter .predictedDIV {
+            line-height: 40px;
+        }
+
+        #running {
+            width: 96%;
+            margin-left: 2%;
+            height: 250px;
+            background-color: #FFFFFF;
+            float: left;
+            background-image:url("https://i.imgur.com/pbF9uzM.jpg");
+            background-size: Cover ;
+            background-size: Contain;
+            background-size: 100% 100% ;
+            overflow:hidden;
+
+        }
+
+        .mode {
+            margin-top: 1%;
+        }
+
+        #running img {
+            width:100px;
+            margin-top:150px;
+            margin-left:-100px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1 id="h01"></h1>
+    <h1>Customs Simulation</h1>
+    <div class="d1">
+        <div class="result">
+            <canvas id="myChart"></canvas>
+        </div>
+        <div class="control">
+            <h1>Control panel</h1>
+            <div class="parameter">
+                <div>
+                    <label>Arrival rate=<label class="arrivalRate">5.0</label></label><br>
+                    <input type="range" data-popup-enabled="true" name="arrivalRate" id="arrivalRate" value="5" min="0"
+                        max="10" onchange="updateTextInput(this)" step="0.1">
+                </div>
+                <div>
+                    <label>Arrival CV=<label class="arrivalCV">1.0</label></label><br>
+                    <input type="range" data-popup-enabled="true" name="arrivalCV" id="arrivalCV" value="1" min="0"
+                        max="2" onchange="updateTextInput(this)" step="0.1">
+                </div>
+                <div>
+                    <label>Service Rate=<label class="serviceRate">5.0</label></label><br>
+                    <input type="range" data-popup-enabled="true" name="serviceRate" id="serviceRate" value="5" min="0"
+                        max="10" onchange="updateTextInput(this)" step="0.1">
+                </div>
+                <div>
+                    <label>Service Time CV=<label class="serviceTimeCV">1.0</label></label><br>
+                    <input type="range" data-popup-enabled="true" name="serviceTimeCV" id="serviceTimeCV" value="1"
+                        min="0" max="2" onchange="updateTextInput(this)" step="0.1">
+                </div>
+                <div>
+                    <label>Speed</label><br>
+                    <input type="range" data-popup-enabled="true" name="speed" id="speed" value="1" min="1" max="10" onchange="updateTextInput(this)">
+                </div>
+                <div class="predictedDIV">
+                    <input type="checkbox" name="predicted" id="predicted"><label for="predicted">Predicted</label>
+                </div>
+            </div>
+            <button class="play">Play</button>
+            <button class="reset">Reset</button>
+            <div class="mode">
+                <select onChange="loadTuple(this)" id="mode">
+                    <option value="">Save parameter tuples here</option>
+                    {% for tuple in record %}
+                    <option value="{{tuple.title}}">{{ tuple.title }}</option>
+                    {% endfor %}
+                </select>
+                <button class="save" onclick='save()'>Save</button>
+                <button class="saveas" onclick='saveAs()'>Save as</button>
+                <div id="dialog" title="the tuple's name is ?">
+                    <input type="text" name="" id="saveasname">
+                </div>
+                <button class="delete" onclick="delTuple()">Delete</button>
+            </div>
+        </div>
+    </div>
+    <div id="running">
+        <img src="https://i.imgur.com/sN1Sji3.png" id="passenger">
+    </div>
+</body>
+
+</html>
