@@ -214,7 +214,7 @@
                         myChart.data.datasets[0].data.push(indWaitTime);
                         myChart.data.datasets[1].data.push(avgWaitTime);
                         myChart.update()
-                        window.setTimeout(function(){
+                        exitTimeout=window.setTimeout(function(){
                         var temp
                         if(queueNum<18){
                             temp=queueNum
@@ -269,7 +269,7 @@
                         timeoutTime=t-2000
                     }
                     queue.push(queueNum)
-                    window.setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
+                    arrivalTimeout=window.setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
                 ff1=0
             }else{
                 if(tuples["arrivalRate"]!=0){
@@ -359,10 +359,6 @@
                     window.clearTimeout(timeoutID2)
                     ff1=1
                     f1()
-                    /*if(ifArriving==1){
-                        arriveAnime.pause()
-                        arriveCustoms2(nowArriving,queueNum,arriveProgress/100)
-                    }*/
                     if(ifExiting2==1){
                         if(exitProgress<100){
                             exitAnime.pause()
@@ -651,16 +647,14 @@
                     animeList.forEach(a => a.play());
                     animeList.length=0
                     f1()
-                    timeoutID4= window.setInterval(function(){
-                        timer+=10*(tuples["speed"]**2)
-                    },10);
+
 
 
                 } else {
                     playorpause = 0
                     $(".play").html("Play")
                     window.clearTimeout(timeoutID2);
-                    window.clearInterval(timeoutID4);
+                    window.clearInterval(arrivalTimeout);
                     ff1=1
                     anime.running.forEach(a =>a.pause())
                     anime.running.forEach(a => animeList.push(a))
