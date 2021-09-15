@@ -674,9 +674,6 @@
                     ff1=0
                     anime.running.forEach(a =>a.pause())
                     anime.running.forEach(a => animeList.push(a))
-                    for(j=nowCustom;j<=nowCustom+animequeue;j++){
-                        $(imgtmp[j]).attr("src","https://i.imgur.com/pIPa6ew.png");
-                    }
                     playtopause=1
                 }
             });
@@ -711,7 +708,6 @@
                 myChart.data.datasets[0].data.length=0
                 myChart.data.datasets[1].data.length=0
                 myChart.update()
-                console.log(animequeue)
                 if (playorpause == 0) { //如果沒在跑
                 } else { //如果跑到一半，要讓他開始重跑
                     f1();
@@ -1041,7 +1037,7 @@
                 </div>
                 <div>
                     <label>Speed</label><br>
-                    <input type="range" data-popup-enabled="true" name="speed" id="speed" value="1" min="1" max="10" onchange="updateTextInput(this)">
+                    <input type="range" data-popup-enabled="true" name="speed" id="speed" value="1" min="1" max="30" onchange="updateTextInput(this)">
                 </div>
                 <div class="predictedDIV">
                     <input type="checkbox" name="predicted" id="predicted"><label for="predicted">Predicted</label>
