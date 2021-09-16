@@ -280,7 +280,7 @@
                         timeoutTime=t-2000
                     }
                     queue.push(queueNum)
-                    //arrivalTimeout=window.setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
+                    arrivalTimeout=window.setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
                 ff1=0
             }else{
                 if(tuples["arrivalRate"]!=0){
@@ -304,7 +304,7 @@
                         timeoutTime=t-2000
                     }
                     queue.push(queueNum)
-                    //arrivalTimeout=setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
+                    arrivalTimeout=setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
                     i+=1
                 }else{
                     t=100
@@ -1037,7 +1037,7 @@
                 </div>
                 <div>
                     <label>Speed</label><br>
-                    <input type="range" data-popup-enabled="true" name="speed" id="speed" value="1" min="1" max="100" onchange="updateTextInput(this)">
+                    <input type="range" data-popup-enabled="true" name="speed" id="speed" value="1" min="1" max="12" onchange="updateTextInput(this)">
                 </div>
                 <div class="predictedDIV">
                     <input type="checkbox" name="predicted" id="predicted"><label for="predicted">Predicted</label>
