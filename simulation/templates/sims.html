@@ -209,7 +209,7 @@
                                 if(arrivalTime[i]>serviceTime[i-1]){
                                     indWaitTime=0
                                 }else{
-                                    indWaitTime=(serviceTime[i-1]-arrivalTime[i])/60000
+                                    indWaitTime=(serviceTime[i-1]-arrivalTime[i])
                                 }
                             }else{
                                 indWaitTime=0
@@ -252,7 +252,7 @@
                         queueNum-=1
                         animequeue-=1
                         queuelength=queueNum-1
-                        exitTimeout=null},delaytimetmp/(tuples["speed"]**2)*(1-p/100))
+                        exitTimeout=null},delaytimetmp/(tuples["speed"]**2))
             }
         }
 
