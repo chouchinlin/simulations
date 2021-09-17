@@ -85,6 +85,7 @@
         var animequeue=0
         var exitTimeout
         var exitAnime
+        var avgWaitTime
 
         function createPassenger(i){
             eval("img"+i+"=document.createElement('img')")
@@ -103,17 +104,17 @@
             createPassenger(i)
             target="#img"+i.toString()
             if(t<2000){
-                duration[i]=t/(tuples["speed"]**2)
+                durationTime=t/(tuples["speed"]**2)
             }else{
-                duration[i]=2000/(tuples["speed"]**2)
+                durationTime=2000/(tuples["speed"]**2)
             }
             imgtmp.push(target)
             animequeuetmp=animequeue
             animequeue+=1
-            arriveAnimation[i]=anime({
+            arriveAnimation=anime({
                 targets:imgtmp[i],
                 translateX: $(window).width()*0.715-100*animequeuetmp,
-                duration:duration[i],
+                duration:durationTime,
                 easing:'linear',
                 complete:function(){
                     $(imgtmp[i]).attr("src","https://i.imgur.com/pIPa6ew.png");
@@ -150,12 +151,12 @@
             })
         }
 
-        function exitAnimate(i,p){
+        function exitAnimate(i,p,d){
             exitAnime=anime({
                 targets:imgtmp[i],
                 translateX:$(window).width(),
                 duration:2000/(tuples["speed"]**2),
-                delay:delaytime[i]/(tuples["speed"]**2)*(1-p/100),
+                delay:d/(tuples["speed"]**2)*(1-p/100),
                 changeBegin:function(){
                     nowinQueue-=1
                 },
@@ -173,6 +174,9 @@
 
 
         function exitCustoms(i,p,source){
+            if(i%1000==0){
+                console.log(i+":"+timer)
+            }
             stopBool=0
             if(tuples["serviceRate"]!=0){
                 if(source!=2){
@@ -181,27 +185,23 @@
                         delay=0
                     }
                     delaytimetmp=60000*delay
-                    delaytime.push(delaytimetmp)
                         if(i==0){
-                            serviceTime.push(arrivalTime[0]+delaytimetmp)
+                            serviceTime.push(arrivalTime[i]+delaytimetmp)
                         }else{
                             if(source==1){
                                 if(serviceTime[i-1]<arrivalTime[i]){
                                     serviceTime.push(arrivalTime[i]+delaytimetmp)
                                 }else{
-                                    serviceTime.push(serviceTime[serviceTime.length-1]+delaytimetmp)
+                                    serviceTime.push(serviceTime[i-1]+delaytimetmp)
                                 }
                             }else{
                                 serviceTime.push(arrivalTime[i]+delaytimetmp)
                             }
                         }
-                     exitAnimate(i,p)
+                     if(tuples["speed"]<=5){
+                        exitAnimate(i,p,delaytimetmp)
+                     }
                 }
-
-
-
-
-                percentage=delaytimetmp/(delaytimetmp+2000)
                         if(i==0){
                             indWaitTime=0
                         }else{
@@ -211,20 +211,26 @@
                                 }else{
                                     indWaitTime=(serviceTime[i-1]-arrivalTime[i])/60000
                                 }
-
                             }else{
                                 indWaitTime=0
                             }
                         }
                         if(source!=2){
+
                             myChart.data.labels.push(chartLabel.toString())
                             chartLabel++
                             waitTimeArr.push(indWaitTime)
                             let sum=waitTimeArr.reduce((previous, current) => current += previous);
-                            let avgWaitTime=sum/waitTimeArr.length;
+                            avgWaitTime=sum/waitTimeArr.length;
                             myChart.data.datasets[0].data.push(indWaitTime);
                             myChart.data.datasets[1].data.push(avgWaitTime);
+                            if(i>1000){
+                                myChart.data.labels=myChart.data.labels.slice(1)
+                                myChart.data.datasets[0].data=myChart.data.datasets[0].data.slice(1)
+                                myChart.data.datasets[1].data=myChart.data.datasets[1].data.slice(1)
+                            }
                             myChart.update()
+
                         }
                         exitTimeout=window.setTimeout(function(){
                         var temp
@@ -234,15 +240,19 @@
                         else{
                             temp=17
                         }
-                        for(j=1;j<animequeue;j++){
-                            moveonAnimate(i+j,j)
+                        if(tuples["speed"]<=5){
+                            for(j=1;j<animequeue;j++){
+
+                                moveonAnimate(i+j,j)
+                            }
                         }
                         for(j=1;j<temp;j++){
                             moveonCustoms(i+j,j)
                         }
                         queueNum-=1
                         animequeue-=1
-                        queuelength=queueNum-1},delaytimetmp/(tuples["speed"]**2)*(1-p/100))
+                        queuelength=queueNum-1
+                        exitTimeout=null},delaytimetmp/(tuples["speed"]**2)*(1-p/100))
             }
         }
 
@@ -266,6 +276,7 @@
 
 
         function f1(){
+            timeoutID2=null
             if(ff1==1){
                 tmpa=arrivalFormula()
                 testarr1.push(tmpa)
@@ -279,8 +290,9 @@
                     }else{
                         timeoutTime=t-2000
                     }
-                    queue.push(queueNum)
-                    arrivalTimeout=window.setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
+                    if(tuples["speed"]<=5){
+                        arrivalTimeout=window.setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
+                    }
                 ff1=0
             }else{
                 if(tuples["arrivalRate"]!=0){
@@ -294,6 +306,7 @@
                     }else{
                         arrivalTime.push(arrivalTime[arrivalTime.length-1]+arrivalTmp)
                     }
+
                     arriveCustoms2(i,queueNum,0)
                     queueNum+=1
                     arrivalTmp=60000*tmpa
@@ -303,14 +316,14 @@
                     }else{
                         timeoutTime=t-2000
                     }
-                    queue.push(queueNum)
-                    arrivalTimeout=setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
+                    if(tuples["speed"]<=5){
+                        arrivalTimeout=setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
+                    }
                     i+=1
                 }else{
                     t=100
                 }
             }
-
             timeoutID2=setTimeout(f1,t)
         }
 
@@ -390,7 +403,7 @@
                         exitCustoms(nowCustom,exitProgress,2)
                     }
                 }
-            }*/
+            }
 
             if(tuples["arrivalRate"]==0){
                 window.clearTimeout(timeoutID2)
@@ -407,24 +420,10 @@
                 f1()
             }
             formerArrivalRate=tuples["arrivalRate"]
-            formerServiceRate=tuples["serviceRate"]
+            formerServiceRate=tuples["serviceRate"]*/
         }
 
-        function checkArraySize(){
-            $.ajax({
-                type: "POST",
-                url: '{% url 'checkArraySize' %}',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}'},
-                async: false,
-                success: function (response) {
-                    b = JSON.parse(response)
-                    console.log(b)
-                    arraylength[0]=b[0]
-                    arraylength[1]=b[1]
-                    arraylength[2]=b[2]
-                }
-            });
-        }
+
 
         function updateTupleArray(){
             tuples["arrivalRate"]=$("#arrivalRate").val()
@@ -457,116 +456,7 @@
         }
 
 
-        function adjustArray(){
-            $.ajax({
-                type: "POST",
-                url: '{% url 'adjustArray' %}',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}',i:arraytmp[2]},
-                success: function (response) {
 
-                }
-            });
-        }
-
-        function getClientInterval(){
-            tmp=[]
-            $.ajax({
-                type: "POST",
-                url: '{% url 'getClientInterval' %}',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}' ,i:arraytmp[0]},
-                success: function (response) {
-                    tmp=JSON.parse(response)
-                    arrivalList = arrivalList.concat(tmp)
-                    arraytmp[0]+=tmp.length
-                }
-            });
-            return tmp
-        }
-
-
-        function getServiceTime(){
-            $.ajax({
-                type: "POST",
-                url: '{% url 'getServiceTime' %}',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}',i:arraytmp[1]},
-                success: function (response) {
-                    tmp=JSON.parse(response)
-                    serviceList = serviceList.concat(tmp)
-                    arraytmp[1]+=tmp.length
-                }
-            });
-        }
-
-        function retriveData2() {
-            $.ajax({
-                type: "POST",
-                url: '{% url 'retriveData' %}',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}' ,i:arraytmp[2]},
-                success: function (response) {
-                    tmp=JSON.parse(response)
-                    waitTime = waitTime.concat(tmp)
-                    arraytmp[2]+=tmp.length
-                }
-            });
-        }
-
-
-        function runSim() {
-            a = ""
-            $.ajax({
-                type: "POST",
-                url: '{% url 'runsim' %}',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}' },
-                //async:false,
-                success: function (response) {
-                    a = JSON.parse(response)
-                    console.log(a)
-                }
-            });
-            return new Promise((resolve, reject) => {
-                if (a == "ok") {
-                    resolve('ok')
-                } else {
-                    reject('fail')
-                }
-            })
-        }
-
-         function reset(){
-            $.ajax({ //把list清空
-                        type: "POST",
-                        url: '{% url 'reset' %}',
-                        data: { csrfmiddlewaretoken: '{{ csrf_token }}' },
-                        success: function (response) {
-                            b = JSON.parse(response)
-                            console.log(b)
-                        }
-            });
-        }
-
-        function pauseSim() {
-            a = ""
-            $.ajax({
-                type: "POST",
-                url: '{% url 'pausesim' %}',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}' , status:playorpause},
-                success: function (response) {
-                    a = JSON.parse(response)
-                    console.log(a)
-                }
-            });
-            return new Promise((resolve, reject) => {
-                if (a == "ok") {
-                    resolve('ok')
-                } else {
-                    reject('fail')
-                }
-            })
-        }
-
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
 
         function updateTextInput(obj) {
             $("." + obj.id).html(obj.value);
@@ -577,11 +467,6 @@
 
         }
 
-        function updateResult(){
-            let res =retriveData2()
-            data=res
-            console.log("hello")
-        }
 
 
         $(document).ready(function () {
@@ -648,13 +533,14 @@
 
             $(".play").click(function () {
                 if (playorpause == 0) {
+                    disableControlPanel()
                     canceled=0
                     $(".play").html("Pause")
                     if(firstTime==1){
                         firstTime=0
                     }else{
                     }
-
+                    timeoutID5=window.setInterval(function(){timer+=1},1000)
                     playorpause = 1
                     animeList.forEach(a => a.play());
                     animeList.length=0
@@ -662,27 +548,29 @@
                     if(playtopause==1){
                         exitCustoms(nowCustom,exitProgress,2)
                     }
-
-
-
                 } else {
+                    enableControlPanel()
                     playorpause = 0
                     $(".play").html("Play")
                     window.clearTimeout(timeoutID2);
-                    window.clearInterval(arrivalTimeout);
-                    window.clearTimeout(exitTimeout);
-                    ff1=0
+                    if(tuples["speed"]<=5){
+                        window.clearInterval(arrivalTimeout);
+                        window.clearTimeout(exitTimeout);
+                    }
+
                     anime.running.forEach(a =>a.pause())
                     anime.running.forEach(a => animeList.push(a))
                     playtopause=1
                 }
             });
 
-            $(".reset").click(async function () {
+            $(".reset").click(function () {
                 playtopause=0
-                window.clearTimeout(arrivalTimeout)
+                if(tuples["speed"]<=5){
+                    window.clearTimeout(arrivalTimeout)
+                    window.clearInterval(exitTimeout)
+                }
                 window.clearTimeout(timeoutID2)
-                window.clearInterval(exitTimeout)
                 anime.running.length=0
                 $("#running").html("")
                 myChart.reset()
@@ -695,6 +583,7 @@
                 testarr1.length=0
                 testarr2.length=0
                 queuelength=0
+                avgWaitTime=0
                 nowinQueue=0
                 animequeue=0
                 chartLabel=1
@@ -708,234 +597,29 @@
                 myChart.data.datasets[0].data.length=0
                 myChart.data.datasets[1].data.length=0
                 myChart.update()
-                if (playorpause == 0) { //如果沒在跑
-                } else { //如果跑到一半，要讓他開始重跑
-                    f1();
-                }
+                playorpause=0
+                $(".play").html("Play")
+                enableControlPanel()
             });
         });
 
-        window.addEventListener("beforeunload", function(e){
-            $.ajax({
-                type: "POST",
-                url: '{% url 'terminate' %}',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}'},
-                success: function (response) {
-                    b = JSON.parse(response)
-                    console.log(b)
-                }
-           });
-        }, false);
-
-    /*
-        function exitCustoms(i,p,source){
-            stopBool=0
-            tmp2="#img"+i
-            bool=0
-            //console.log(tmp2+" exiting")
-            timetmp=timer
-            if(tuples["serviceRate"]!=0){
-                delay=serviceFormula()
-                testarr2.push(delay)
-                if(delay<0){
-                    delay=0
-                }
-                //console.log(tmp2+" delay:"+delay)
-                delaytimetmp=60000*delay
-                if(i==0){
-                    serviceTime.push(arrivalTime[0]+delaytimetmp)
-                }else{
-                    if(source==1){
-                        if(serviceTime[i-1]<arrivalTime[i]){
-                            serviceTime.push(arrivalTime[i]+delaytimetmp)
-                        }else{
-                            serviceTime.push(serviceTime[serviceTime.length-1]+delaytimetmp)
-                        }
-                    }else{
-                        serviceTime.push(arrivalTime[i]+delaytimetmp)
-                    }
-                }
-
-
-
-                percentage=delaytimetmp/(delaytimetmp+2000)
-
-                exitAnime=anime({
-                    targets: imgtmp[i],
-                    keyframes:[
-                        {translateX:$(window).width()}
-                    ],
-                    easing: 'linear',
-                    duration:exitDurationtime,
-                    delay:delaytimetmp/(tuples["speed"]**2)*(1-p),
-                    update:function(anim) {
-                        exitProgress=Math.round(anim.progress)/percentage
-                    },
-                    begin:function(){
-                        ifExiting2=1
-                        //console.log(tmp2+" begin")
-                    },
-                    changeBegin:function(){
-                        //console.log(tmp2+" change begin")
-                        $(imgtmp[i]).attr("src","https://media2.giphy.com/media/W4EjLJMPXzjvFrZR9a/giphy.gif?cid=790b7611c9fbbf758eab4430e01b85681d4fbf2ced39c08d&rid=giphy.gif&ct=s");
-                        if(ifArriving==1){
-                                ifExiting=1
-                        }
-                        //indWaitTime=(timetmp-arrivalTime[i])/60000
-                        if(i==0){
-                            indWaitTime=0
-                        }else{
-                            if(source==1){
-                                if(arrivalTime[i]>serviceTime[i-1]){
-                                    indWaitTime=0
-                                }else{
-                                    indWaitTime=(serviceTime[i-1]-arrivalTime[i])/60000
-                                }
-
-                            }else{
-                                indWaitTime=0
-                            }
-                        }
-                        myChart.data.labels.push(chartLabel.toString())
-                        chartLabel++
-                        waitTimeArr.push(indWaitTime)
-                        let sum=waitTimeArr.reduce((previous, current) => current += previous);
-                        let avgWaitTime=sum/waitTimeArr.length;
-                        myChart.data.datasets[0].data.push(indWaitTime);
-                        myChart.data.datasets[1].data.push(avgWaitTime);
-                        myChart.update()
-                        var temp
-                        if(queueNum<18){
-                            temp=queueNum
-                        }
-                        else{
-                            temp=17
-                        }
-                        for(j=1;j<temp;j++){
-                            moveonCustoms(i+j,j)
-                        }
-                        queueNum-=1
-                        queuelength=queueNum-1
-
-                    },
-                    complete:function(){
-                        //console.log(tmp2+" complete")
-                        ifExiting2=0
-                    }
-                })
-            }
+        function disableControlPanel(){
+            $('#arrivalRate').attr('disabled', true);
+            $('#arrivalCV').attr('disabled', true);
+            $('#serviceRate').attr('disabled', true);
+            $('#serviceTimeCV').attr('disabled', true);
+            $('#speed').attr('disabled', true);
+            $('#predicted').attr('disabled', true);
         }
 
-        function moveonCustoms(i,j){
-            tmp3="#img"+i
-            moveonAnime[j-1]=anime({
-                targets: imgtmp[i],
-                translateX:$(window).width()*0.715-100*(j-1),
-                duration:exitDurationtime,
-                easing: 'linear',
-                begin:function(){
-
-                },
-                complete:function(){
-                    if(j==1){
-                        exitCustoms(i,0,1)
-                        nowCustom=i
-                    }
-                }
-            })
-
+        function enableControlPanel(){
+            $('#arrivalRate').attr('disabled', false);
+            $('#arrivalCV').attr('disabled', false);
+            $('#serviceRate').attr('disabled', false);
+            $('#serviceTimeCV').attr('disabled', false);
+            $('#speed').attr('disabled', false);
+            $('#predicted').attr('disabled', false);
         }
-
-        function arriveCustoms2(i,q,p){
-            ifArriving=1
-            tmp="#img"+i.toString()
-            imgtmp.push(tmp)
-
-            var image = document.getElementsByClassName("img"+i.toString());
-            arriveAnime=anime({
-                targets: imgtmp[i],
-                keyframes:[
-                    {translateX:$(window).width()*0.715-100*q},
-                ],
-                duration:arriveDurationtime*(1-p),
-                easing: 'linear',
-                begin:function(){
-                    nowArriving=i
-
-                },
-                update:function(anim) {
-                    arriveProgress=Math.round(anim.progress)
-                },
-                complete:function(){
-
-                    $(imgtmp[i]).attr("src","https://i.imgur.com/pIPa6ew.png");
-                    queueNum+=1
-                    queuelength=queueNum-1
-                    ifArriving=0
-                    if(q!==queuelength){
-                        anime({
-                            targets: imgtmp[i],
-                            keyframes:[
-                                {translateX:$(window).width()*0.715-100*queuelength},
-                            ],
-                            duration:exitDurationtime,
-                            easing: 'linear',
-                            complete:function(){
-
-                                if(queuelength==0){
-                                    exitCustoms(i,0,0)
-                                    nowCustom=i
-                                }
-                            }
-                        })
-                    }else{
-
-                        if(q==0){
-                            exitCustoms(i,0,0)
-                            nowCustom=i
-                        }
-                    }
-
-
-                }
-            })
-        }
-
-        function f1(){
-            if(ff1==1){
-                tmpa=arrivalFormula()
-                testarr1.push(tmpa)
-                if(tmpa<0){
-                    tmpa=0
-                }
-                arrivalTmp=60000*tmpa
-                t=arrivalTmp/(tuples["speed"]**2)
-                ff1=0
-            }else{
-                if(tuples["arrivalRate"]!=0){
-                    //console.log(arrivalTmp)
-                    createPassenger(i)
-                    arriveCustoms2(i,queueNum,0)
-                    //arrivalTime.push(timer)
-                    i+=1
-                    tmpa=arrivalFormula()
-                    testarr1.push(tmpa)
-                    if(tmpa<0){
-                        tmpa=0
-                    }
-                    if(arrivalTime.length==0){
-                        arrivalTime.push(arrivalTmp)
-                    }else{
-                        arrivalTime.push(arrivalTime[arrivalTime.length-1]+arrivalTmp)
-                    }
-                    arrivalTmp=60000*tmpa
-                    t=arrivalTmp/(tuples["speed"]**2)
-                }else{
-                    t=100
-                }
-            }
-            timeoutID2=setTimeout(f1,t)
-        }*/
 
     </script>
     {% block javascript %}
@@ -1037,7 +721,7 @@
                 </div>
                 <div>
                     <label>Speed</label><br>
-                    <input type="range" data-popup-enabled="true" name="speed" id="speed" value="1" min="1" max="12" onchange="updateTextInput(this)">
+                    <input type="range" data-popup-enabled="true" name="speed" id="speed" value="1" min="1" max="50" step="1" onchange="updateTextInput(this)">
                 </div>
                 <div class="predictedDIV">
                     <input type="checkbox" name="predicted" id="predicted"><label for="predicted">Predicted</label>
