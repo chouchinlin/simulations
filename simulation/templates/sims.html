@@ -174,9 +174,6 @@
 
 
         function exitCustoms(i,p,source){
-            if(i%1000==0){
-                console.log(i+":"+timer)
-            }
             stopBool=0
             if(tuples["serviceRate"]!=0){
                 if(source!=2){
@@ -185,6 +182,7 @@
                         delay=0
                     }
                     delaytimetmp=60000*delay
+                    testarr2.push(delaytimetmp)
                         if(i==0){
                             serviceTime.push(arrivalTime[i]+delaytimetmp)
                         }else{
@@ -216,7 +214,6 @@
                             }
                         }
                         if(source!=2){
-
                             myChart.data.labels.push(chartLabel.toString())
                             chartLabel++
                             waitTimeArr.push(indWaitTime)
@@ -230,6 +227,7 @@
                                 myChart.data.datasets[1].data=myChart.data.datasets[1].data.slice(1)
                             }
                             myChart.update()
+
 
                         }
                         exitTimeout=window.setTimeout(function(){
@@ -257,15 +255,18 @@
         }
 
         function moveonCustoms(i,j){
+            if(playorpause==1){
                     if(j==1){
                         exitCustoms(i,0,1)
                         nowCustom=i
                     }
+            }
         }
 
         function arriveCustoms2(i,q,p){
             ifArriving=1
             nowArriving=i
+            queueNum+=1
             queuelength=queueNum-1
             ifArriving=0
             if(q==0){
@@ -279,11 +280,11 @@
             timeoutID2=null
             if(ff1==1){
                 tmpa=arrivalFormula()
-                testarr1.push(tmpa)
                 if(tmpa<0){
                     tmpa=0
                 }
                 arrivalTmp=60000*tmpa
+                testarr1.push(arrivalTmp)
                 t=arrivalTmp/(tuples["speed"]**2)
                 if(arrivalTmp<2000){
                         timeoutTime=0
@@ -297,7 +298,7 @@
             }else{
                 if(tuples["arrivalRate"]!=0){
                     tmpa=arrivalFormula()
-                    testarr1.push(tmpa)
+
                     if(tmpa<0){
                         tmpa=0
                     }
@@ -306,10 +307,10 @@
                     }else{
                         arrivalTime.push(arrivalTime[arrivalTime.length-1]+arrivalTmp)
                     }
-
                     arriveCustoms2(i,queueNum,0)
-                    queueNum+=1
+
                     arrivalTmp=60000*tmpa
+                    testarr1.push(arrivalTmp)
                     t=arrivalTmp/(tuples["speed"]**2)
                     if(arrivalTmp<2000){
                         timeoutTime=0
@@ -324,6 +325,7 @@
                     t=100
                 }
             }
+
             timeoutID2=setTimeout(f1,t)
         }
 
@@ -538,26 +540,28 @@
                     $(".play").html("Pause")
                     if(firstTime==1){
                         firstTime=0
+                        queueNum=0
                     }else{
+
                     }
-                    timeoutID5=window.setInterval(function(){timer+=1},1000)
                     playorpause = 1
-                    animeList.forEach(a => a.play());
-                    animeList.length=0
+                    timeoutID10=window.setInterval(function(){timer+=tuples["speed"]**2*5},5)
                     f1()
                     if(playtopause==1){
-                        exitCustoms(nowCustom,exitProgress,2)
+                        animeList.forEach(a => a.play());
+                        animeList.length=0
+                        exitCustoms(nowCustom,0,1)
                     }
                 } else {
                     enableControlPanel()
                     playorpause = 0
                     $(".play").html("Play")
                     window.clearTimeout(timeoutID2);
+                    window.clearTimeout(exitTimeout);
                     if(tuples["speed"]<=5){
                         window.clearInterval(arrivalTimeout);
-                        window.clearTimeout(exitTimeout);
                     }
-
+                    clearTimeout(timeoutID10)
                     anime.running.forEach(a =>a.pause())
                     anime.running.forEach(a => animeList.push(a))
                     playtopause=1
@@ -578,6 +582,7 @@
                 arrivalTime.length=0
                 waitTimeArr.length=0
                 imgtmp.length=0
+                firstTime=1
                 queue.length=0
                 duration.length=0
                 testarr1.length=0
@@ -587,6 +592,7 @@
                 nowinQueue=0
                 animequeue=0
                 chartLabel=1
+                nowCustom=0
                 ff1=1
                 queueNum=0;
                 ifExiting=0;
@@ -598,6 +604,7 @@
                 myChart.data.datasets[1].data.length=0
                 myChart.update()
                 playorpause=0
+                playtopause=0
                 $(".play").html("Play")
                 enableControlPanel()
             });
