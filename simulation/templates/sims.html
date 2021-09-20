@@ -60,8 +60,8 @@
         var arrivalTime=[]
 
         var timer=0
-        var arrivalFormula=d3.randomNormal(1/tuples["arrivalRate"],tuples["arrivalCV"]*(1/tuples["arrivalRate"]))
-        var serviceFormula=d3.randomNormal(1/tuples["serviceRate"],tuples["serviceTimeCV"]*(1/tuples["serviceRate"]))
+        var arrivalFormula=d3.randomLogNormal(1/tuples["arrivalRate"],tuples["arrivalCV"]*(1/tuples["arrivalRate"]))
+        var serviceFormula=d3.randomLogNormal(1/tuples["serviceRate"],tuples["serviceTimeCV"]*(1/tuples["serviceRate"]))
         var arrivalTmp
         var ifArriving=0
         var nowArriving
@@ -152,6 +152,7 @@
         }
 
         function exitAnimate(i,p,d){
+
             exitAnime=anime({
                 targets:imgtmp[i],
                 translateX:$(window).width(),
@@ -174,6 +175,7 @@
 
 
         function exitCustoms(i,p,source){
+
             stopBool=0
             if(tuples["serviceRate"]!=0){
                 if(source!=2){
@@ -213,6 +215,7 @@
                                 indWaitTime=0
                             }
                         }
+
                         if(source!=2){
                             myChart.data.labels.push(chartLabel.toString())
                             chartLabel++
@@ -232,15 +235,10 @@
                         }
                         exitTimeout=window.setTimeout(function(){
                         var temp
-                        if(queueNum<18){
-                            temp=queueNum
-                        }
-                        else{
-                            temp=17
-                        }
+                        temp=queueNum
+
                         if(tuples["speed"]<=5){
                             for(j=1;j<animequeue;j++){
-
                                 moveonAnimate(i+j,j)
                             }
                         }
@@ -277,7 +275,6 @@
 
 
         function f1(){
-            timeoutID2=null
             if(ff1==1){
                 tmpa=arrivalFormula()
                 if(tmpa<0){
@@ -298,14 +295,13 @@
             }else{
                 if(tuples["arrivalRate"]!=0){
                     tmpa=arrivalFormula()
-
                     if(tmpa<0){
                         tmpa=0
                     }
                     if(arrivalTime.length==0){
                         arrivalTime.push(arrivalTmp)
                     }else{
-                        arrivalTime.push(arrivalTime[arrivalTime.length-1]+arrivalTmp)
+                        arrivalTime.push(arrivalTime[i-1]+arrivalTmp)
                     }
                     arriveCustoms2(i,queueNum,0)
 
@@ -550,7 +546,7 @@
                     if(playtopause==1){
                         animeList.forEach(a => a.play());
                         animeList.length=0
-                        exitCustoms(nowCustom,0,1)
+                        exitCustoms(chartLabel-1,0,1)
                     }
                 } else {
                     enableControlPanel()
@@ -570,9 +566,9 @@
 
             $(".reset").click(function () {
                 playtopause=0
+                window.clearInterval(exitTimeout)
                 if(tuples["speed"]<=5){
                     window.clearTimeout(arrivalTimeout)
-                    window.clearInterval(exitTimeout)
                 }
                 window.clearTimeout(timeoutID2)
                 anime.running.length=0
