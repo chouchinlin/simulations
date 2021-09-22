@@ -86,6 +86,7 @@
         var exitTimeout
         var exitAnime
         var avgWaitTime
+        var ifAnimated=true
 
         function createPassenger(i){
             eval("img"+i+"=document.createElement('img')")
@@ -108,7 +109,7 @@
             }else{
                 durationTime=2000/(tuples["speed"]**2)
             }
-            imgtmp.push(target)
+            imgtmp[i]=target
             animequeuetmp=animequeue
             animequeue+=1
             arriveAnimation=anime({
@@ -152,7 +153,6 @@
         }
 
         function exitAnimate(i,p,d){
-
             exitAnime=anime({
                 targets:imgtmp[i],
                 translateX:$(window).width(),
@@ -198,7 +198,7 @@
                                 serviceTime.push(arrivalTime[i]+delaytimetmp)
                             }
                         }
-                     if(tuples["speed"]<=5){
+                     if(tuples["speed"]<=10){
                         exitAnimate(i,p,delaytimetmp)
                      }
                 }
@@ -219,10 +219,10 @@
                         if(source!=2){
                             myChart.data.labels.push(chartLabel.toString())
                             chartLabel++
-                            waitTimeArr.push(indWaitTime)
+                            waitTimeArr.push(indWaitTime/60000)
                             let sum=waitTimeArr.reduce((previous, current) => current += previous);
                             avgWaitTime=sum/waitTimeArr.length;
-                            myChart.data.datasets[0].data.push(indWaitTime);
+                            myChart.data.datasets[0].data.push(indWaitTime/60000);
                             myChart.data.datasets[1].data.push(avgWaitTime);
                             if(i>1000){
                                 myChart.data.labels=myChart.data.labels.slice(1)
@@ -230,14 +230,12 @@
                                 myChart.data.datasets[1].data=myChart.data.datasets[1].data.slice(1)
                             }
                             myChart.update()
-
-
                         }
                         exitTimeout=window.setTimeout(function(){
                         var temp
                         temp=queueNum
 
-                        if(tuples["speed"]<=5){
+                        if(tuples["speed"]<=10){
                             for(j=1;j<animequeue;j++){
                                 moveonAnimate(i+j,j)
                             }
@@ -248,6 +246,7 @@
                         queueNum-=1
                         animequeue-=1
                         queuelength=queueNum-1
+
                         exitTimeout=null},delaytimetmp/(tuples["speed"]**2))
             }
         }
@@ -288,7 +287,7 @@
                     }else{
                         timeoutTime=t-2000
                     }
-                    if(tuples["speed"]<=5){
+                    if(tuples["speed"]<=10){
                         arrivalTimeout=window.setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
                     }
                 ff1=0
@@ -313,7 +312,7 @@
                     }else{
                         timeoutTime=t-2000
                     }
-                    if(tuples["speed"]<=5){
+                    if(tuples["speed"]<=10){
                         arrivalTimeout=setTimeout(function(){arrivalAnimate(i,arrivalTmp)},timeoutTime)
                     }
                     i+=1
@@ -372,7 +371,11 @@
 
             arriveDurationtime=2000/(tuples["speed"]**2)
             exitDurationtime=2000/(tuples["speed"]**2)
-
+            if(tuples["speed"]<=10){
+                ifAnimated=true
+            }else{
+                ifAnimated=false
+            }
 
             /*if(change=="speed"){ //這邊想一下 應該要重啟：arrive的過程 arrive的動畫 exit的過程 exit的動畫
                 if(playorpause==1){
@@ -543,9 +546,15 @@
                     playorpause = 1
                     timeoutID10=window.setInterval(function(){timer+=tuples["speed"]**2*5},5)
                     f1()
+
                     if(playtopause==1){
-                        animeList.forEach(a => a.play());
-                        animeList.length=0
+                        animequeue=queueNum
+                        if(ifAnimated){
+                            animeList.forEach(a => a.play());
+                            animeList.length=0
+                        }else{
+                            $("#running").html("")
+                        }
                         exitCustoms(chartLabel-1,0,1)
                     }
                 } else {
@@ -554,7 +563,7 @@
                     $(".play").html("Play")
                     window.clearTimeout(timeoutID2);
                     window.clearTimeout(exitTimeout);
-                    if(tuples["speed"]<=5){
+                    if(tuples["speed"]<=10){
                         window.clearInterval(arrivalTimeout);
                     }
                     clearTimeout(timeoutID10)
@@ -567,7 +576,7 @@
             $(".reset").click(function () {
                 playtopause=0
                 window.clearInterval(exitTimeout)
-                if(tuples["speed"]<=5){
+                if(tuples["speed"]<=10){
                     window.clearTimeout(arrivalTimeout)
                 }
                 window.clearTimeout(timeoutID2)
