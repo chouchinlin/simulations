@@ -546,6 +546,7 @@
                     playorpause = 1
                     timeoutID10=window.setInterval(function(){timer+=tuples["speed"]**2*5},5)
                     f1()
+                    $(".play").hide();
 
                     if(playtopause==1){
                         animequeue=queueNum
@@ -574,6 +575,7 @@
             });
 
             $(".reset").click(function () {
+                $(".play").show();
                 playtopause=0
                 window.clearInterval(exitTimeout)
                 if(tuples["speed"]<=10){
