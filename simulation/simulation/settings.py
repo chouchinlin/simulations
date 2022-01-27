@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-v^m3d6k6%qz=41d9^3q)v=#e69^cg(j_5u6+vk3z1qb+hw_#@^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*','git.heroku.com/customsimulation.git']
+ALLOWED_HOSTS = ['*','customsimulation.heroku.com/']
 
 
 # Application definition
