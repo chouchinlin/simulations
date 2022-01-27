@@ -38,6 +38,7 @@ def sim(request):
     })
 
 
+
 #模擬本體
 
 class Customs(object):

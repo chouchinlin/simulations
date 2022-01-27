@@ -472,6 +472,7 @@
 
         $(document).ready(function () {
             ctx = document.getElementById('myChart');
+            $("#predicted").hide();
             myChart = new Chart(ctx, {
             type: 'line', //圖表類型
             data: {
@@ -546,7 +547,7 @@
                     playorpause = 1
                     timeoutID10=window.setInterval(function(){timer+=tuples["speed"]**2*5},5)
                     f1()
-                    $(".play").hide();
+                    //$(".play").hide();
 
                     if(playtopause==1){
                         animequeue=queueNum
@@ -559,7 +560,12 @@
                         exitCustoms(chartLabel-1,0,1)
                     }
                 } else {
-                    enableControlPanel()
+                    //enableControlPanel()
+                    $('#arrivalRate').attr('disabled', false);
+                    $('#arrivalCV').attr('disabled', false);
+                    $('#serviceRate').attr('disabled', false);
+                    $('#serviceTimeCV').attr('disabled', false);
+                    $('#predicted').attr('disabled', false);
                     playorpause = 0
                     $(".play").html("Play")
                     window.clearTimeout(timeoutID2);
@@ -738,7 +744,7 @@
                     <input type="range" data-popup-enabled="true" name="speed" id="speed" value="1" min="1" max="50" step="1" onchange="updateTextInput(this)">
                 </div>
                 <div class="predictedDIV">
-                    <input type="checkbox" name="predicted" id="predicted"><label for="predicted">Predicted</label>
+                    <input type="checkbox" name="predicted" id="predicted"><label for="predicted"></label>
                 </div>
             </div>
             <button class="play">Play</button>
